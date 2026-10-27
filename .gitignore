@@ -1,0 +1,9 @@
+bench/*/build/
+bench/*/src/data/
+__pycache__/
+*.safetensors
+*.venv/
+bench/v03_qwen/tools/tokenizer*.json
+bench/v03_qwen/tools/config*.json
+
+bench/v04_lfm3/model/
