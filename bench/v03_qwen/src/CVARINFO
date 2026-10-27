@@ -1,0 +1,6 @@
+server int qwen_idx = 0;
+server string qwen_prompt = "";
+server string qwen_system = "You are a helpful assistant. Answer in one short sentence.";
+server int qwen_max_tokens = 24;
+server bool qwen_autorun = false;
+server bool qwen_tokenize_only = false;
