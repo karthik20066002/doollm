@@ -1,0 +1,50 @@
+{
+  "repo": "LiquidAI/LFM3-1.7B",
+  "revision": "ac2586a34f1a1c03329dbdcdefabd8b6478ddaa7",
+  "files": {
+    "config.json": {
+      "bytes": 1454,
+      "sha256": "8c6ae8b8f6d88c87cfb98cf4b5e34e943d0ee07e24215c4121b3159a46e1399d"
+    },
+    "configuration_lfm3.py": {
+      "bytes": 6113,
+      "sha256": "176cced35657aedfea7d7002221360582d1c05fcaca882c21508bc3a73b282e5"
+    },
+    "modeling_lfm3.py": {
+      "bytes": 42359,
+      "sha256": "e8cd5254ea99ce6bd731b57b10908c2e8b5010ce8315341f895a38484885eeab"
+    },
+    "lfm3_conv.py": {
+      "bytes": 8532,
+      "sha256": "80d4a985382a22774212759248a6b4c737bfbf9c2a47b3dd7f797dda748e4bb4"
+    },
+    "tokenizer_config.json": {
+      "bytes": 1545,
+      "sha256": "bf028f813efc6137bc07ed045cafe71820df9a5e26a38e39954706ed1e30a457"
+    },
+    "special_tokens_map.json": {
+      "bytes": 92,
+      "sha256": "7946f864cbfb62a1b041bda937244210a1a87f4a6cab3a48b791131b2cd57f88"
+    },
+    "chat_template.jinja": {
+      "bytes": 12129,
+      "sha256": "f45005c50cd2a97329722bf3a2dee9f16c04cdf825a589b280fb7e99e6827818"
+    },
+    "generation_config.json": {
+      "bytes": 328,
+      "sha256": "0095ba7158e938b1e2d3082d412f00d8be85e42cbbd7608b63866f7a081cf270"
+    },
+    "LICENSE": {
+      "bytes": 10574,
+      "sha256": "4d28ca14dedc0b3d0fcc2b3339f0e79931faa33874f3d24f522183a8fc70068c"
+    },
+    "tokenizer.json": {
+      "bytes": 17908635,
+      "sha256": "7e226e34bface23ccf6e495d157bf77186c1c30a7659880e1a8994db528c3701"
+    },
+    "model.safetensors": {
+      "bytes": 3457635448,
+      "sha256": "135922caef64e81e52af88ede8b7c3ddaa9d6da220a9737fb3065275dbfb4330"
+    }
+  }
+}
