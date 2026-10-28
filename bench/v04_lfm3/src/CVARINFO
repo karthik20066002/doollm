@@ -1,0 +1,10 @@
+server string llm_prompt = "";
+server string llm_system = "You are a helpful assistant. Answer briefly and accurately.";
+server int llm_max_tokens = 0;
+server float llm_budget_ms = 4.0;
+server bool llm_debug = false;
+server bool llm_autorun = false;
+server bool llm_tokenize_only = false;
+server float llm_timeout_s = 0.0;
+server bool llm_thinking = true;
+server bool llm_profile = false;

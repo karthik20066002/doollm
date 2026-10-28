@@ -1,0 +1,3 @@
+alias llm "event llm"
+alias llm_cancel "event llm_cancel"
+alias llm_tokenize "event llm_tokenize"
