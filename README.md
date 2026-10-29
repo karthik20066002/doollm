@@ -1,98 +1,82 @@
 # doollm
 
-The native **LFM3-1.7B** experiment is in [bench/v04_lfm3](bench/v04_lfm3/README.md).
-It supports custom console prompts and cancellable inference. See its measured
-latency and limitations before testing; the instructions below describe Qwen.
+LFM3-1.7B running inside Doom. The matrix multiplies, attention, tokenizer and
+text generation are all ZScript, running in GZDoom. Python turns the model
+weights into lumps beforehand. There is no inference server.
 
-Qwen2.5-0.5B-Instruct inference inside GZDoom's ZScript VM. Python prepares
-quantized weights and provides a numerical reference; inference and console
-prompt tokenization run inside the engine.
+This started with an int8 matrix multiply, then attention, then Qwen2.5-0.5B.
+LFM3 is the current version. You can ask it something from the console and keep
+playing while it works through the answer.
 
-The experiments progress from `bench/v01_int8_matvec` (integer matrix-vector
-multiplication), through `bench/v02_attention` (attention), to `bench/v03_qwen`
-(the full model).
+It is slow. One short prompt with eight output tokens took about 142 seconds,
+including loading. That run matched the quantized reference token for token.
+It does not mean the answers are good. It has confidently told me nonsense
+about the BFG 9000.
 
-## Ask a question in Doom
+## Run it
 
-With the v03 PK3 loaded and a map running, open the console with `~`:
+You need GZDoom 4.14+, Python 3.11 or newer, and your own Doom IWAD. The launcher
+uses Doom II by default. Model weights and built PK3s are not in this repo.
+
+From the repository root:
+
+```sh
+python3 -m venv bench/v04_lfm3/.venv
+. bench/v04_lfm3/.venv/bin/activate
+pip install numpy torch safetensors tokenizers psutil
+
+python bench/v04_lfm3/tools/fetch.py
+python bench/v04_lfm3/tools/export.py
+python bench/v04_lfm3/tools/tokenizer_export.py
+python bench/v04_lfm3/tools/layout.py
+python bench/v04_lfm3/tools/package.py
+python bench/v04_lfm3/tools/play.py
+```
+
+The download is several GB. Fetching uses the model revision recorded in the
+source; the downloaded files and their hashes are listed in `assets.lock.json`.
+For an IWAD somewhere else, pass `--iwad /path/to/DOOM2.WAD` to `play.py`.
+
+Open the console with `~`:
 
 ```text
-qwen_prompt "What is the BFG 9000?"
-qwen
+llm_prompt "What is the BFG 9000?"
+llm
 ```
 
-The reply appears after `Qwen:`. Change `qwen_prompt` and run `qwen` again for
-another question. Weights stay loaded, while generation state starts fresh;
-questions are independent, with no conversation history.
-
-Optional settings:
+Tokens print as they arrive. The weights stay loaded between questions, but
+each question starts fresh. There is no chat history.
 
 ```text
-qwen_system "You are a helpful assistant. Answer in one short sentence."
-qwen_max_tokens 24
+llm_thinking false
+llm_cancel
 ```
 
-The context budget is **128 tokens**, including the chat template and generated
-reply. With the default 24-token generation budget, prompts may contain at most
-105 tokens including the template. Oversized prompts produce a console error.
-Generation is synchronous and pauses gameplay until the reply is ready.
+The first command turns thinking off for the next question. The second stops
+the current request and prints what it has produced so far. Thinking is on by
+default. You can also change the instructions with `llm_system "..."`.
 
-To use a previously prepared prompt slot:
+There is no input or output token cap imposed by the mod, and no default
+request timeout. Generation stops at the model's end token or when you cancel.
+Long prompts still cost memory and time.
 
-```text
-qwen_prompt ""
-qwen_idx 0
-qwen
-```
+## What's in here
 
-`qwen_tokenize` prints prompt token IDs without running inference.
+- `bench/v01_int8_matvec`: the first matrix multiply.
+- `bench/v02_attention`: attention and a Python reference.
+- [bench/v03_qwen](bench/v03_qwen/README.md): Qwen2.5-0.5B, including its older console commands.
+- [bench/v04_lfm3](bench/v04_lfm3/README.md): LFM3, measurements and profiling instructions.
 
-## Setup and launch
+The LFM3 runtime uses int8 weights and double-precision activations and caches.
+Weights are stored in lumps and loaded into the VM. Work is split across small
+slices so inference can run alongside the game; some initial reads and
+allocations can still hitch.
 
-Requires GZDoom 4.14+, a Doom-compatible IWAD, Python, and:
+In the single-token profile, dense matrix-vector products took 99.47% of the
+measured stage time. GZDoom's VM JIT was enabled. That number includes indexing,
+conversions and memory access as well as the arithmetic; it doesn't isolate
+interpreter overhead.
 
-```sh
-python3 -m pip install -r bench/v03_qwen/requirements.txt
-```
-
-Place the Qwen2.5-0.5B-Instruct model's `model.safetensors`, `config.json`, and
-`tokenizer.json` in `bench/v03_qwen/tools/`. These large/downloaded assets and
-generated data are git-ignored. The implementation is specific to this model's
-architecture; it uses greedy decoding and int8 weights, activations, and KV cache.
-
-```sh
-python3 bench/v03_qwen/tools/ask.py "Give me a Doom survival tip."
-```
-
-This prepares the tokenizer, generates weights if absent, packages
-`bench/v03_qwen/build/qwen_v03.pk3`, and launches the game. Use `--iwad PATH`
-for a different IWAD or `--no-launch` to build only. The default IWAD is
-`/usr/share/games/doom/DOOM2.WAD`.
-
-To launch an already built PK3 without automatically asking a question:
-
-```sh
-gzdoom -iwad /usr/share/games/doom/DOOM2.WAD \
-  -file bench/v03_qwen/build/qwen_v03.pk3 +map MAP01
-```
-
-`prep_prompt.py` preserves existing saved prompts. `set_prompt.py QUERY --idx N`
-updates a slot, `add_prompt.py QUERY` appends, and `add_prompt.py --clear` removes
-both the saved library and generated prompt binaries.
-
-## Benchmark
-
-```sh
-python3 bench/v03_qwen/tools/run.py --skip-weights --query "Say hello." --max-tokens 3
-```
-
-The benchmark needs a working graphical session and closes its own GZDoom
-process. It compares prompt IDs, generated IDs, raw text bytes,
-first logits, and projection checksums against NumPy, then checks that gameplay
-resumes. Remove `--skip-weights` to regenerate weights; omit `--max-tokens` for
-the default generation budget. Logs and reference output go to the v03 `build`
-directory.
-
-The native tokenizer uses exported BPE ranks, the tokenizer library's Unicode
-character classes, and NFC tables generated with Python's Unicode database
-(version recorded in `src/data/unicode_version.txt`).
+[Liquid AI's LFM3](https://huggingface.co/LiquidAI/LFM3-1.7B) made this a fun
+thing to try. Its model license is included in the generated PK3. Doom's game
+data is not distributed here.
