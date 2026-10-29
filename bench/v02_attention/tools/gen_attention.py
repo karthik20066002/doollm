@@ -28,8 +28,9 @@ def load_safetensors(path: Path):
             continue
         assert meta["dtype"] == "F32", meta
         a0, a1 = meta["data_offsets"]
-        arr = np.memmap(path, dtype="<f4", mode="r",
-                        offset=base + a0, shape=tuple(meta["shape"]))
+        arr = np.memmap(
+            path, dtype="<f4", mode="r", offset=base + a0, shape=tuple(meta["shape"])
+        )
         out[name] = np.array(arr, dtype=np.float64)
     return out
 
@@ -55,20 +56,20 @@ def main() -> None:
     DATA.mkdir(parents=True, exist_ok=True)
     t = load_safetensors(SAFE)
 
-
     emb = t["wte.weight"][TOKENS]
     write_fx(DATA / "emb.bin", emb)
     write_fx(DATA / "lng.bin", t["h.0.ln_1.weight"])
     write_fx(DATA / "lnb.bin", t["h.0.ln_1.bias"])
     print(f"emb {emb.shape} range [{emb.min():.3f},{emb.max():.3f}]")
 
-
     wq, sq = quant_rows(t["h.0.attn.c_attn.weight"])
     write_u8(DATA / "wqkv.bin", wq)
     write_fx(DATA / "sqkv.bin", sq)
     write_fx(DATA / "bqkv.bin", t["h.0.attn.c_attn.bias"])
     nz = (wq != 0).mean()
-    print(f"wqkv {wq.shape} nonzero={nz:.2%} scale range [{sq.min():.5f},{sq.max():.5f}]")
+    print(
+        f"wqkv {wq.shape} nonzero={nz:.2%} scale range [{sq.min():.5f},{sq.max():.5f}]"
+    )
 
     wp, sp = quant_rows(t["h.0.attn.c_proj.weight"])
     write_u8(DATA / "wproj.bin", wp)

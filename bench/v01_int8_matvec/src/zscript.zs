@@ -1,6 +1,5 @@
 version "4.14"
 
-
 class MatmulBench : StaticEventHandler
 {
     Array<int> W;
@@ -38,7 +37,6 @@ class MatmulBench : StaticEventHandler
         if (e.Name ~== "matmul" && e.Args[0] > 0)
             RunSize(e.Args[0], e.Args[1] >= 0 ? e.Args[1] : 0);
     }
-
 
     void ParseSpec(string s, out Array<int> sizes, out Array<int> modes)
     {

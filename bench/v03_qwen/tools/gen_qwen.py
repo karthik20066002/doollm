@@ -19,16 +19,33 @@ CHUNK = 8192
 
 def cfg() -> dict:
     c = json.loads(CONF.read_text())
-    expected = {"hidden_size": 896, "intermediate_size": 4864, "num_hidden_layers": 24,
-                "num_attention_heads": 14, "num_key_value_heads": 2, "vocab_size": 151936,
-                "rope_theta": 1000000.0, "rms_norm_eps": 1e-6, "tie_word_embeddings": True}
+    expected = {
+        "hidden_size": 896,
+        "intermediate_size": 4864,
+        "num_hidden_layers": 24,
+        "num_attention_heads": 14,
+        "num_key_value_heads": 2,
+        "vocab_size": 151936,
+        "rope_theta": 1000000.0,
+        "rms_norm_eps": 1e-6,
+        "tie_word_embeddings": True,
+    }
     for key, value in expected.items():
         if c.get(key) != value:
-            raise ValueError(f"unsupported model config: {key}={c.get(key)!r}; expected {value!r}")
-    return dict(hidden=c["hidden_size"], inter=c["intermediate_size"],
-                layers=c["num_hidden_layers"], heads=c["num_attention_heads"],
-                kv=c["num_key_value_heads"], hd=c["hidden_size"] // c["num_attention_heads"],
-                theta=c["rope_theta"], eps=c["rms_norm_eps"], vocab=c["vocab_size"])
+            raise ValueError(
+                f"unsupported model config: {key}={c.get(key)!r}; expected {value!r}"
+            )
+    return dict(
+        hidden=c["hidden_size"],
+        inter=c["intermediate_size"],
+        layers=c["num_hidden_layers"],
+        heads=c["num_attention_heads"],
+        kv=c["num_key_value_heads"],
+        hd=c["hidden_size"] // c["num_attention_heads"],
+        theta=c["rope_theta"],
+        eps=c["rms_norm_eps"],
+        vocab=c["vocab_size"],
+    )
 
 
 def safetensors_index(path: Path) -> dict:
@@ -36,8 +53,11 @@ def safetensors_index(path: Path) -> dict:
         hlen = struct.unpack("<Q", f.read(8))[0]
         hdr = json.loads(f.read(hlen))
     base = 8 + hlen
-    return {k: (base + v["data_offsets"][0], v["dtype"], v["shape"])
-            for k, v in hdr.items() if k != "__metadata__"}
+    return {
+        k: (base + v["data_offsets"][0], v["dtype"], v["shape"])
+        for k, v in hdr.items()
+        if k != "__metadata__"
+    }
 
 
 def read_tensor(idx: dict, name: str) -> np.ndarray:
@@ -47,9 +67,13 @@ def read_tensor(idx: dict, name: str) -> np.ndarray:
         u = np.memmap(SAFE, dtype="<u2", mode="r", offset=off, shape=n)
         f = (u.astype(np.uint32) << 16).view(np.float32).astype(np.float64)
     elif dtype == "F16":
-        f = np.memmap(SAFE, dtype="<f2", mode="r", offset=off, shape=n).astype(np.float64)
+        f = np.memmap(SAFE, dtype="<f2", mode="r", offset=off, shape=n).astype(
+            np.float64
+        )
     elif dtype == "F32":
-        f = np.memmap(SAFE, dtype="<f4", mode="r", offset=off, shape=n).astype(np.float64)
+        f = np.memmap(SAFE, dtype="<f4", mode="r", offset=off, shape=n).astype(
+            np.float64
+        )
     else:
         raise ValueError(f"{name}: unsupported dtype {dtype}")
     return f.reshape(shape)
@@ -76,7 +100,9 @@ def write_f64(path: Path, v: np.ndarray) -> None:
 
 def main() -> int:
     if not SAFE.exists():
-        print("model.safetensors missing; place Qwen2.5-0.5B-Instruct assets in tools/ (see README.md)")
+        print(
+            "model.safetensors missing; place Qwen2.5-0.5B-Instruct assets in tools/ (see README.md)"
+        )
         return 1
     DATA.mkdir(parents=True, exist_ok=True)
     c = cfg()
@@ -84,17 +110,14 @@ def main() -> int:
     idx = safetensors_index(SAFE)
     print(f"config: {c}")
 
-
     inv = 1.0 / (c["theta"] ** (np.arange(0, HD, 2, dtype=np.float64) / HD))
     ang = np.arange(MAXPOS, dtype=np.float64)[:, None] * inv[None, :]
     write_f64(DATA / "rope.bin", np.concatenate([np.cos(ang), np.sin(ang)]))
-
 
     wte = read_tensor(idx, "model.embed_tokens.weight")
     with open(DATA / "wte.bin", "wb") as wf:
         swte = quant_rows(wte, wf)
     write_f64(DATA / "swte.bin", swte)
-
 
     tables = {
         "q": ("self_attn.q_proj.weight", "wq.bin", "sq.bin"),

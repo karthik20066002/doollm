@@ -175,7 +175,6 @@ class LFMRuntime : Object
     bool MV(LFMMatrix m,Array<double> input,Array<double> output)
     {
 
-
         if(row==0)
         {
             double sum=0;
@@ -192,7 +191,6 @@ class LFMRuntime : Object
     void Rope(Array<double> values,int count,Array<double> table,bool full=false)
     {
 
-
         for(int j=0;j<64;j++)
         {
             double c,s;
@@ -200,7 +198,6 @@ class LFMRuntime : Object
             else
             {
                 double inv=full && j>=32 ? 0 : exp(-double(j)/64.0*(full ? 13.815510557964274 : 9.210340371976184));
-
 
                 double angle=double(pos)*inv;
                 angle-=floor(angle/6.283185307179586+0.5)*6.283185307179586;

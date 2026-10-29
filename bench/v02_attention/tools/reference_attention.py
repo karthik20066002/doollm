@@ -25,9 +25,15 @@ def quant(v):
 def main():
     emb = load_fx("emb.bin").reshape(T, D)
     lng, lnb = load_fx("lng.bin"), load_fx("lnb.bin")
-    wqkv = np.fromfile(DATA / "wqkv.bin", dtype=np.uint8).reshape(QKV, D).astype(np.int64) - 128
+    wqkv = (
+        np.fromfile(DATA / "wqkv.bin", dtype=np.uint8).reshape(QKV, D).astype(np.int64)
+        - 128
+    )
     sqkv, bqkv = load_fx("sqkv.bin"), load_fx("bqkv.bin")
-    wproj = np.fromfile(DATA / "wproj.bin", dtype=np.uint8).reshape(D, D).astype(np.int64) - 128
+    wproj = (
+        np.fromfile(DATA / "wproj.bin", dtype=np.uint8).reshape(D, D).astype(np.int64)
+        - 128
+    )
     sproj, bproj = load_fx("sproj.bin"), load_fx("bproj.bin")
 
     qkv_all = np.zeros((T, QKV))
@@ -65,9 +71,15 @@ def main():
     sv = np.zeros((T, HEADS))
     for t in range(T):
         for h in range(HEADS):
-            q8[t, h * DH:(h + 1) * DH], sq[t, h] = quant(qkv_all[t, h * DH:(h + 1) * DH])
-            k8[t, h * DH:(h + 1) * DH], sk[t, h] = quant(qkv_all[t, DH * HEADS + h * DH:DH * HEADS + (h + 1) * DH])
-            v8[t, h * DH:(h + 1) * DH], sv[t, h] = quant(qkv_all[t, 2 * DH * HEADS + h * DH:2 * DH * HEADS + (h + 1) * DH])
+            q8[t, h * DH : (h + 1) * DH], sq[t, h] = quant(
+                qkv_all[t, h * DH : (h + 1) * DH]
+            )
+            k8[t, h * DH : (h + 1) * DH], sk[t, h] = quant(
+                qkv_all[t, DH * HEADS + h * DH : DH * HEADS + (h + 1) * DH]
+            )
+            v8[t, h * DH : (h + 1) * DH], sv[t, h] = quant(
+                qkv_all[t, 2 * DH * HEADS + h * DH : 2 * DH * HEADS + (h + 1) * DH]
+            )
     for t in range(T):
         print(f"XQ {t} {xq_sums[t]}")
     print(f"QKVINT - {qkv_int}")
@@ -78,7 +90,9 @@ def main():
         for t in range(T):
             s = np.empty(T)
             for u in range(T):
-                qd = int((q8[t, h * DH:(h + 1) * DH] * k8[u, h * DH:(h + 1) * DH]).sum())
+                qd = int(
+                    (q8[t, h * DH : (h + 1) * DH] * k8[u, h * DH : (h + 1) * DH]).sum()
+                )
                 att_int = (att_int + qd) % (1 << 32)
                 s[u] = qd * KSCALE * sq[t, h] * sk[u, h]
             m = s.max()

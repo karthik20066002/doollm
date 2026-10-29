@@ -13,13 +13,17 @@ def main() -> None:
     sizes = [int(a) for a in sys.argv[1:]] or [256]
     for n in sizes:
         wb = np.frombuffer((DATA / f"w{n}.bin").read_bytes(), dtype=np.uint8)
-        x = (np.frombuffer((DATA / f"x{n}.bin").read_bytes(), dtype=np.uint8)
-             .astype(np.int32) - 128)
+        x = (
+            np.frombuffer((DATA / f"x{n}.bin").read_bytes(), dtype=np.uint8).astype(
+                np.int32
+            )
+            - 128
+        )
 
         y = np.empty(n, dtype=np.int32)
         for r0 in range(0, n, 4096):
             r1 = min(r0 + 4096, n)
-            y[r0:r1] = (wb[r0 * n:r1 * n].astype(np.int32) - 128).reshape(-1, n) @ x
+            y[r0:r1] = (wb[r0 * n : r1 * n].astype(np.int32) - 128).reshape(-1, n) @ x
 
         checksum = int(np.sum(y, dtype=np.int64)) % (1 << 32)
         head = " ".join(str(int(v)) for v in y[:16])
@@ -28,7 +32,9 @@ def main() -> None:
         def matvec() -> None:
             for r0 in range(0, n, 4096):
                 r1 = min(r0 + 4096, n)
-                y[r0:r1] = (wb[r0 * n:r1 * n].astype(np.int32) - 128).reshape(-1, n) @ x
+                y[r0:r1] = (wb[r0 * n : r1 * n].astype(np.int32) - 128).reshape(
+                    -1, n
+                ) @ x
 
         est = 0.0
         for _ in range(3):

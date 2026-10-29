@@ -1,6 +1,5 @@
 version "4.14"
 
-
 const A_D = 768;
 const A_QKV = 2304;
 const A_HEADS = 12;
@@ -30,7 +29,6 @@ class AttentionBench : StaticEventHandler
 
         uint qi, ai, pi;
         Forward(qi, ai, pi, false);
-
 
         double t0 = MSTimeF();
         Forward(qi, ai, pi, true);
@@ -70,7 +68,6 @@ class AttentionBench : StaticEventHandler
         }
     }
 
-
     double Pow2(int e)
     {
         double p = 1.0;
@@ -80,7 +77,6 @@ class AttentionBench : StaticEventHandler
             for (int i = 0; i < -e; i++) p *= 0.5;
         return p;
     }
-
 
     double LoadFx(string b, int idx)
     {

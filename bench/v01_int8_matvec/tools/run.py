@@ -28,12 +28,15 @@ def parse_block(pattern: str, txt: str, ngroup: int = 1):
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("tokens", nargs="*", default=DEFAULT_TOKENS,
-                    help='e.g. 256 (both modes) or 256:1 (uint8 only)')
+    ap.add_argument(
+        "tokens",
+        nargs="*",
+        default=DEFAULT_TOKENS,
+        help="e.g. 256 (both modes) or 256:1 (uint8 only)",
+    )
     ap.add_argument("--iwad", default="/usr/share/games/doom/DOOM2.WAD")
     ap.add_argument("--timeout", type=float, default=600.0)
     args = ap.parse_args()
-
 
     pairs = []
     for tok in args.tokens:
@@ -59,17 +62,34 @@ def main() -> int:
     print(f"[2/4] packaged {pk3.name} ({pk3.stat().st_size} bytes)")
 
     ref = sh([sys.executable, str(TOOLS / "reference.py"), *map(str, sizes)]).stdout
-    ref_y = {int(m.group(1)): (m.group(2), m.group(3)) for m in re.finditer(
-        r"^Y size=(\d+) sum=(\d+) head=(.*)$", ref, re.M)}
-    numpy_ms = {int(m.group(1)): float(m.group(2))
-                for m in re.finditer(r"^NUMPY size=(\d+) ms_per_iter=([\d.]+)", ref, re.M)}
+    ref_y = {
+        int(m.group(1)): (m.group(2), m.group(3))
+        for m in re.finditer(r"^Y size=(\d+) sum=(\d+) head=(.*)$", ref, re.M)
+    }
+    numpy_ms = {
+        int(m.group(1)): float(m.group(2))
+        for m in re.finditer(r"^NUMPY size=(\d+) ms_per_iter=([\d.]+)", ref, re.M)
+    }
     print(f"[3/4] numpy reference computed ({len(ref_y)} sizes)")
 
     log = BUILD / "gzdoom.log"
     log.unlink(missing_ok=True)
-    cmd = ["gzdoom", "-config", str(BUILD / "gzdoom.ini"), "-iwad", args.iwad,
-           "-file", str(pk3), "+logfile", str(log),
-           "+map", "MAP01", "-nomonsters", "-nosound", "-nomusic"]
+    cmd = [
+        "gzdoom",
+        "-config",
+        str(BUILD / "gzdoom.ini"),
+        "-iwad",
+        args.iwad,
+        "-file",
+        str(pk3),
+        "+logfile",
+        str(log),
+        "+map",
+        "MAP01",
+        "-nomonsters",
+        "-nosound",
+        "-nomusic",
+    ]
     print(f"[4/4] running gzdoom (log: {log})")
     proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 
@@ -102,14 +122,28 @@ def main() -> int:
             proc.wait()
 
     txt = log.read_text(errors="replace") if log.exists() else ""
-    z_y = {(int(m.group(1)), int(m.group(2))): (m.group(3), m.group(4)) for m in re.finditer(
-        r"^Y size=(\d+) mode=(\d+) sum=(\d+) head=(.*)$", txt, re.M)}
-    result = {(int(m.group(1)), int(m.group(2))): m.groupdict() for m in re.finditer(
-        r"^RESULT size=(?P<size>\d+) mode=(?P<mode>\d+) iters=(?P<iters>\d+) "
-        r"warmup_ms=(?P<warmup>[\d.]+) total_ms=(?P<total>[\d.]+) "
-        r"ms_per_iter=(?P<per>[\d.]+) macs_per_sec=(?P<mps>[\d.]+)", txt, re.M)}
-    load = {(int(m.group(1)), int(m.group(2))): float(m.group(3)) for m in
-            re.finditer(r"^LOAD size=(\d+) mode=(\d+) bytes=\d+ ms=([\d.]+)", txt, re.M)}
+    z_y = {
+        (int(m.group(1)), int(m.group(2))): (m.group(3), m.group(4))
+        for m in re.finditer(
+            r"^Y size=(\d+) mode=(\d+) sum=(\d+) head=(.*)$", txt, re.M
+        )
+    }
+    result = {
+        (int(m.group(1)), int(m.group(2))): m.groupdict()
+        for m in re.finditer(
+            r"^RESULT size=(?P<size>\d+) mode=(?P<mode>\d+) iters=(?P<iters>\d+) "
+            r"warmup_ms=(?P<warmup>[\d.]+) total_ms=(?P<total>[\d.]+) "
+            r"ms_per_iter=(?P<per>[\d.]+) macs_per_sec=(?P<mps>[\d.]+)",
+            txt,
+            re.M,
+        )
+    }
+    load = {
+        (int(m.group(1)), int(m.group(2))): float(m.group(3))
+        for m in re.finditer(
+            r"^LOAD size=(\d+) mode=(\d+) bytes=\d+ ms=([\d.]+)", txt, re.M
+        )
+    }
 
     print("\n=== RESULTS ===")
     hdr = f"{'size':>6} {'mode':>4} {'ms/iter':>10} {'MACs/s':>12} {'load ms':>9} {'vs numpy':>9}  checksum"
@@ -128,10 +162,14 @@ def main() -> int:
             per = float(r["per"])
             mps = float(r["mps"])
             vs = f"{per / numpy_ms[n]:.0f}x" if n in numpy_ms else "?"
-            print(f"{n:>6} {mode_name[mode]:>4} {per:>10.4f} {mps:>12.1f} "
-                  f"{load.get((n, mode), 0):>9.3f} {vs:>9}  {match}")
+            print(
+                f"{n:>6} {mode_name[mode]:>4} {per:>10.4f} {mps:>12.1f} "
+                f"{load.get((n, mode), 0):>9.3f} {vs:>9}  {match}"
+            )
         else:
-            print(f"{n:>6} {mode_name[mode]:>4} {'--':>10} {'--':>12} {'--':>9} {'--':>9}  {match}")
+            print(
+                f"{n:>6} {mode_name[mode]:>4} {'--':>10} {'--':>12} {'--':>9} {'--':>9}  {match}"
+            )
     print("-" * len(hdr))
     print(f"MATMUL_DONE seen: {done}   TICK_AFTER_BENCH (gameplay resumed): {resumed}")
     if not done:

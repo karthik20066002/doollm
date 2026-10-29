@@ -27,10 +27,15 @@ def load(prompt_path=None):
     def f64(name):
         return np.fromfile(DATA / name, dtype="<f8")
 
-    for k, wn, sn in [("q", "wq.bin", "sq.bin"), ("k", "wk.bin", "sk.bin"),
-                      ("v", "wv.bin", "sv.bin"), ("o", "wo.bin", "so.bin"),
-                      ("g", "wg.bin", "sg.bin"), ("u", "wu.bin", "su.bin"),
-                      ("d", "wd.bin", "sd.bin")]:
+    for k, wn, sn in [
+        ("q", "wq.bin", "sq.bin"),
+        ("k", "wk.bin", "sk.bin"),
+        ("v", "wv.bin", "sv.bin"),
+        ("o", "wo.bin", "so.bin"),
+        ("g", "wg.bin", "sg.bin"),
+        ("u", "wu.bin", "su.bin"),
+        ("d", "wd.bin", "sd.bin"),
+    ]:
         W8[k] = u8(wn).reshape(L, -1) - 128
         SC[k] = f64(sn).reshape(L, -1)
     W8["te"] = (u8("wte.bin") - 128).reshape(-1, D)
@@ -38,15 +43,24 @@ def load(prompt_path=None):
     BQ = f64("bq.bin").reshape(L, D)
     BK = f64("bk.bin").reshape(L, KVH * HD)
     BV = f64("bv.bin").reshape(L, KVH * HD)
-    cfg = dict(n1=f64("norm1.bin").reshape(L, D), n2=f64("norm2.bin").reshape(L, D),
-               nf=f64("normf.bin"), rope=f64("rope.bin"))
+    cfg = dict(
+        n1=f64("norm1.bin").reshape(L, D),
+        n2=f64("norm2.bin").reshape(L, D),
+        nf=f64("normf.bin"),
+        rope=f64("rope.bin"),
+    )
     pids = np.fromfile(prompt_path or DATA / "prompt.bin", dtype="<i4")
-    if len(pids)<2 or pids[0] != len(pids)-1 or np.any(pids[1:]<0) or np.any(pids[1:]>=151936):
+    if (
+        len(pids) < 2
+        or pids[0] != len(pids) - 1
+        or np.any(pids[1:] < 0)
+        or np.any(pids[1:] >= 151936)
+    ):
         raise ValueError("invalid prompt file")
     cfg["plen"] = int(pids[0])
     cfg["pids"] = pids[1:]
     cfg["cos"] = cfg["rope"][: 128 * 32].reshape(128, 32)
-    cfg["sin"] = cfg["rope"][128 * 32:].reshape(128, 32)
+    cfg["sin"] = cfg["rope"][128 * 32 :].reshape(128, 32)
     cfg["bq"] = BQ
     cfg["bk"] = BK
     cfg["bv"] = BV
@@ -99,7 +113,6 @@ def quant(v):
 
 def quant_per_row(v):
 
-
     s = np.abs(v).max(axis=1) / 127.0
     s[s == 0] = 1.0
     return np.rint(v / s[:, None]).astype(np.int32), s
@@ -144,15 +157,17 @@ def decode_table():
     pos, table = 0, []
     while pos < len(raw):
         n = raw[pos]
-        table.append(raw[pos + 1:pos + 1 + n])
+        table.append(raw[pos + 1 : pos + 1 + n])
         pos += 1 + n
     return table
 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('--prompt', type=Path)
-    ap.add_argument('--max-tokens', type=int, default=MAXTOK, choices=range(1,MAXTOK+1))
+    ap.add_argument("--prompt", type=Path)
+    ap.add_argument(
+        "--max-tokens", type=int, default=MAXTOK, choices=range(1, MAXTOK + 1)
+    )
     args = ap.parse_args()
     cfg = load(args.prompt)
     plen = cfg["plen"]
@@ -164,7 +179,9 @@ def main():
     Vc = np.zeros((L, KVH, 128, HD))
     Skc = np.ones((L, KVH, 128))
     Svc = np.ones((L, KVH, 128))
-    sums = {k: np.zeros(L, dtype=np.uint64) for k in ("q", "k", "v", "o", "g", "u", "d")}
+    sums = {
+        k: np.zeros(L, dtype=np.uint64) for k in ("q", "k", "v", "o", "g", "u", "d")
+    }
     logit_acc = 0
     first_logits = None
     table = decode_table()
@@ -179,13 +196,16 @@ def main():
         ZI = np.zeros(INTER)
         x = W8["te"][tid].astype(np.float64) * SC["te"][tid]
         import os
+
         if pos == 0 and os.environ.get("DBG"):
             h0 = rms(x, cfg["n1"][0])
             xq0, sx10 = quant(h0)
             wq_sum = 0
             for _i in range(896):
                 wq_sum = (wq_sum + (_i + 1) * int(xq0[_i])) & 0xFFFFFFFF
-            print(f"FBB x0 {x[0]:.17g} h0 {h0[0]:.17g} sx1 {sx10:.17g} xq0 {xq0[0]} xq1 {xq0[1]} xq2 {xq0[2]} wq {wq_sum}")
+            print(
+                f"FBB x0 {x[0]:.17g} h0 {h0[0]:.17g} sx1 {sx10:.17g} xq0 {xq0[0]} xq1 {xq0[1]} xq2 {xq0[2]} wq {wq_sum}"
+            )
         for l in range(L):
             h = rms(x, cfg["n1"][l])
             xq, sx1 = quant(h)
@@ -208,7 +228,6 @@ def main():
             Vc[l, :, pos] = vq
             Skc[l, :, pos] = sk
             Svc[l, :, pos] = sv
-
 
             n = pos + 1
             att = np.empty(D)
@@ -250,15 +269,20 @@ def main():
             sums["d"][l] += si
             x = x + dd
             import os
+
             if pos == 0 and l == 0 and os.environ.get("DBG"):
                 print(f"FB emb0 {x[0]:.17g}")
                 print(f"FB sx1 {sx1:.17g}")
-                print(f"FB emb00 {x[0]:.17g} h0 {h[0]:.17g} ms {float((x*x).sum()):.17g}")
+                print(
+                    f"FB emb00 {x[0]:.17g} h0 {h[0]:.17g} ms {float((x * x).sum()):.17g}"
+                )
                 print(f"FB q0 {qq[0]:.17g} k0 {kk[0]:.17g} v0 {vv[0]:.17g}")
                 print(f"FB att0 {att[0]:.17g} sxo {sxo:.17g} ao0 {ao[0]}")
                 print(f"FB o0 {o[0]:.17g}")
                 print(f"FB xatt0 {x[0]:.17g}")
-                print(f"FB gg0 {gg[0]:.17g} uu0 {uu[0]:.17g} mq0 {mq[0]} sxm {sxm:.17g}")
+                print(
+                    f"FB gg0 {gg[0]:.17g} uu0 {uu[0]:.17g} mq0 {mq[0]} sxm {sxm:.17g}"
+                )
                 print(f"FB dd0 {dd[0]:.17g}")
                 print(f"FB x0 {x[0]:.17g}")
             if pos <= 1 and os.environ.get("DBG"):
@@ -275,7 +299,6 @@ def main():
                 first_logits = (aid, float(logits[aid]))
             return aid
         return -1
-
 
     for p in range(plen):
         nxt = forward(p, cfg["pids"][p], p == plen - 1)

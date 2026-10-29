@@ -1,4 +1,3 @@
-
 import json
 import struct
 from pathlib import Path
@@ -18,9 +17,11 @@ def tokenizer():
 
 
 def tokenize_prompt(tok, system, user):
-    text = (f"<|im_start|>system\n{system}<|im_end|>\n"
-            f"<|im_start|>user\n{user}<|im_end|>\n"
-            f"<|im_start|>assistant\n")
+    text = (
+        f"<|im_start|>system\n{system}<|im_end|>\n"
+        f"<|im_start|>user\n{user}<|im_end|>\n"
+        f"<|im_start|>assistant\n"
+    )
     ids = tok.encode(text, add_special_tokens=False).ids
     if tok.decode(ids, skip_special_tokens=False) != tok.normalizer.normalize_str(text):
         raise ValueError("prompt does not round-trip through the tokenizer")
@@ -30,7 +31,9 @@ def tokenize_prompt(tok, system, user):
 
 def validate_ids(ids):
     if not 1 <= len(ids) <= MAXPROMPT:
-        raise ValueError(f"prompt has {len(ids)} tokens; limit is {MAXPROMPT} including chat template")
+        raise ValueError(
+            f"prompt has {len(ids)} tokens; limit is {MAXPROMPT} including chat template"
+        )
     if any(t < 0 or t >= VOCAB for t in ids):
         raise ValueError("invalid prompt token ID")
 
@@ -42,7 +45,9 @@ def load_lib(data=DATA):
 
 def save_lib(lib, tok, data=DATA):
 
-    encoded = [tokenize_prompt(tok, e.get("system", DEFAULT_SYSTEM), e["query"]) for e in lib]
+    encoded = [
+        tokenize_prompt(tok, e.get("system", DEFAULT_SYSTEM), e["query"]) for e in lib
+    ]
     data.mkdir(parents=True, exist_ok=True)
     keep = set()
     for idx, ids in enumerate(encoded):
@@ -57,4 +62,6 @@ def save_lib(lib, tok, data=DATA):
             path.unlink()
     if not lib:
         (data / "prompt.bin").unlink(missing_ok=True)
-    (data / "prompt_lib.json").write_text(json.dumps(lib, indent=2, ensure_ascii=False) + "\n")
+    (data / "prompt_lib.json").write_text(
+        json.dumps(lib, indent=2, ensure_ascii=False) + "\n"
+    )

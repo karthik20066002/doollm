@@ -3,7 +3,6 @@ version "4.14"
 #include "runtime.zs"
 #include "model.zs"
 
-
 class LFMRunner : StaticEventHandler
 {
     ui LFMRuntime model;
@@ -101,7 +100,6 @@ class LFMRunner : StaticEventHandler
         if(generated==0 && thinking) Console.Printf("LFM3 <think>");
         reply=reply..piece;
         pendingUtf8=pendingUtf8..piece;
-
 
         int at=0;
         while(at<int(pendingUtf8.Length()))

@@ -1,4 +1,3 @@
-
 class LFMModel : LFMRuntime {
     override bool Configure() {
         embedding=Matrix("t000",128000,2048);

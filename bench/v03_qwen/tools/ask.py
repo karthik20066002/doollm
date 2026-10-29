@@ -20,14 +20,16 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="Ask Qwen2.5 inside Doom")
     ap.add_argument("query", nargs="+", help="user query")
     ap.add_argument("--iwad", default=IWAD, help="path to IWAD")
-    ap.add_argument("--no-launch", action="store_true",
-                    help="only repackage; don't launch GZDoom")
+    ap.add_argument(
+        "--no-launch", action="store_true", help="only repackage; don't launch GZDoom"
+    )
     args = ap.parse_args()
 
     query = " ".join(args.query)
     print(f"[1/3] tokenizing query: {query!r}")
-    subprocess.run([sys.executable, str(TOOLS / "set_prompt.py"), query, "--idx", "0"],
-                   check=True)
+    subprocess.run(
+        [sys.executable, str(TOOLS / "set_prompt.py"), query, "--idx", "0"], check=True
+    )
 
     subprocess.run([sys.executable, str(TOOLS / "prep_prompt.py")], check=True)
     if not (SRC / "data" / "wte.bin").exists():
@@ -41,10 +43,32 @@ def main() -> int:
         return 0
 
     print("[3/3] launching GZDoom")
-    cmd = ["gzdoom", "-config", str(BUILD / "gzdoom.ini"), "-iwad", args.iwad,
-           "-file", str(pk3), "+map", "MAP01", "-nomonsters", "-nosound", "-nomusic",
-           "+qwen_idx", "0", "+qwen_prompt", query, "+qwen_system", DEFAULT_SYSTEM,
-           "+qwen_max_tokens", "24", "+qwen_tokenize_only", "false", "+qwen_autorun", "true"]
+    cmd = [
+        "gzdoom",
+        "-config",
+        str(BUILD / "gzdoom.ini"),
+        "-iwad",
+        args.iwad,
+        "-file",
+        str(pk3),
+        "+map",
+        "MAP01",
+        "-nomonsters",
+        "-nosound",
+        "-nomusic",
+        "+qwen_idx",
+        "0",
+        "+qwen_prompt",
+        query,
+        "+qwen_system",
+        DEFAULT_SYSTEM,
+        "+qwen_max_tokens",
+        "24",
+        "+qwen_tokenize_only",
+        "false",
+        "+qwen_autorun",
+        "true",
+    ]
     return subprocess.run(cmd).returncode
 
 

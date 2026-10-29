@@ -159,7 +159,6 @@ class LFMTokenizer : Object
         for (int i=0; i<work.Size(); i++) ids.Push(work[i]);
     }
 
-
     void Ordinary(string text, Array<int> ids)
     {
         Array<int> cp, offsets, kinds;

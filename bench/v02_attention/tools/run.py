@@ -60,9 +60,22 @@ def main() -> int:
 
     log = BUILD / "gzdoom.log"
     log.unlink(missing_ok=True)
-    cmd = ["gzdoom", "-config", str(BUILD / "gzdoom.ini"), "-iwad", args.iwad,
-           "-file", str(pk3), "+logfile", str(log),
-           "+map", "MAP01", "-nomonsters", "-nosound", "-nomusic"]
+    cmd = [
+        "gzdoom",
+        "-config",
+        str(BUILD / "gzdoom.ini"),
+        "-iwad",
+        args.iwad,
+        "-file",
+        str(pk3),
+        "+logfile",
+        str(log),
+        "+map",
+        "MAP01",
+        "-nomonsters",
+        "-nosound",
+        "-nomusic",
+    ]
     print(f"[4/4] running gzdoom (log: {log})")
     proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 
@@ -108,8 +121,7 @@ def main() -> int:
     fails = 0
     checked = 0
     for key in sorted(EXACT_KEYS | FLOAT_KEYS):
-        idxs = sorted({idx for (k, idx) in ref if k == key},
-                      key=lambda s: (len(s), s))
+        idxs = sorted({idx for (k, idx) in ref if k == key}, key=lambda s: (len(s), s))
         for idx in idxs:
             checked += 1
             rk, zk = ref.get((key, idx)), z.get((key, idx))

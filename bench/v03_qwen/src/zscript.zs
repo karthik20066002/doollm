@@ -1,7 +1,6 @@
 version "4.14"
 #include "tokenizer.zs"
 
-
 const Q_D = 896;
 const Q_INTER = 4864;
 const Q_L = 24;
@@ -29,17 +28,14 @@ class QwenBench : StaticEventHandler
     Array<double> bo, bg, bu, bd;
     Array<double> bte;
 
-
     Array<int> kc, vc;
     Array<double> skc, svc;
-
 
     Array<double> x, h, qArr, kArr, vArr, sil, att, hf, logits, upv;
     Array<int> xq, ao, xq2, mq, xqf;
     Array<double> e, p;
     Array<int> kq8, vq8;
     Array<double> ksc, vsc;
-
 
     Array<uint> lq, lk, lv, lo, lg, lu, ld;
 
@@ -147,7 +143,6 @@ class QwenBench : StaticEventHandler
         Console.Printf("MATMUL_DONE");
     }
 
-
     double LoadFx(string b, int idx)
     {
         idx *= 8;
@@ -155,7 +150,6 @@ class QwenBench : StaticEventHandler
                   (b.ByteAt(idx + 2) << 16) | (b.ByteAt(idx + 3) << 24);
         uint hi = b.ByteAt(idx + 4) | (b.ByteAt(idx + 5) << 8) |
                   (b.ByteAt(idx + 6) << 16) | (b.ByteAt(idx + 7) << 24);
-
 
         bool neg = (hi & 2147483648u) != 0;
         int ei = int((hi >> 20) & 2047u);
@@ -323,7 +317,6 @@ class QwenBench : StaticEventHandler
         for (int i = 0; i < count; i++) dst[i] = LoadFx(b, i);
     }
 
-
     int RintEven(double v)
     {
         double fl = floor(v);
@@ -351,7 +344,6 @@ class QwenBench : StaticEventHandler
             dst[doff + i] = RintEven(src[soff + i] / s);
         return s;
     }
-
 
     double ExpD(double x)
     {
@@ -441,7 +433,6 @@ class QwenBench : StaticEventHandler
         }
     }
 
-
     string Detok(int tid)
     {
         if (tid<0 || tid>=decOff.Size()) return "";
@@ -472,7 +463,6 @@ class QwenBench : StaticEventHandler
         }
         Console.Printf("%s 99 %.0f", key, double(tot));
     }
-
 
     int ForwardPos(int pos, int tid, bool needLogits)
     {
